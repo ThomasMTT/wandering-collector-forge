@@ -1,0 +1,119 @@
+name: Build and Publish Minecraft Mod
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code for Release Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set Up JDK Based on Branch
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ github.ref == 'refs/heads/1.21.1' && '21' ||
+            github.ref == 'refs/heads/1.20.6' && '21' ||
+            github.ref == 'refs/heads/1.20.1' && '17' ||
+            github.ref == 'refs/heads/1.19.4' && '17' ||
+            github.ref == 'refs/heads/1.18.2' && '17' ||
+            github.ref == 'refs/heads/1.17.1' && '16' ||
+            '8' }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle Build Tool
+        uses: gradle/actions/setup-gradle@v4.0.0
+
+      - name: Grant Execution Permission to Gradle Wrapper
+        run: chmod +x ./gradlew
+
+      - name: Build Project with Gradle Wrapper
+        run: ./gradlew build
+
+      - name: Create JAR File with Gradle
+        run: ./gradlew jar
+
+      - name: Extract Version from Release Name
+        id: extract_last_value
+        run: |
+          LAST_VALUE="${{ github.event.release.name }}"
+          LAST_VALUE="${LAST_VALUE##* }"  # Get last word after last space
+          echo "last_value=$LAST_VALUE" >> $GITHUB_ENV
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4  # Updated to v4
+        with:
+          name: wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_value }}.jar
+          path: ./build/libs/wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_value }}.jar
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: Modding
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code for Release Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Extract Version from Release Name for Publishing
+        id: extract_last_value_publish
+        run: |
+          LAST_VALUE="${{ github.event.release.name }}"
+          LAST_VALUE="${LAST_VALUE##* }"  # Get last word after last space
+          echo "last_value=$LAST_VALUE" >> $GITHUB_ENV
+
+      - name: Get Last Three Characters of Release Name
+        id: extract_version
+        run: |
+          RELEASE_NAME="${{ github.event.release.name }}"
+          LAST_THREE="${RELEASE_NAME: -3}"  # Get the last three characters
+          echo "last_three_version=$LAST_THREE" >> $GITHUB_ENV
+
+      - name: Download Build Artifact from Previous Job
+        uses: actions/download-artifact@v4  # Updated to v4
+        with:
+          name: wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_value }}.jar
+          path: ./  # Specify the path to save the downloaded asset
+
+      - name: Upload Artifact to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_value }}.jar
+          asset_name: wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_value }}.jar
+          asset_content_type: application/java-archive
+
+      - name: Publish Mod using mc-publish
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: vC1rJ44q
+          modrinth-featured: false
+          modrinth-unfeature-mode: subset
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 1112785
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: wandering_collector-${{ github.event.release.tag_name }}-${{ env.last_three_version }}.jar
+          name: ${{ github.event.release.name }}
+          version: ${{ github.event.release.tag_name }}-${{ env.last_value }}  # Use the tag as version
+          version-type: release
+          changelog: ${{ github.event.release.body }}  # Extract changelog from the release body
+          loaders: |
+            forge
+          game-versions: |
+            ${{ github.event.release.tag_name }}
+          retry-attempts: 2
+          retry-delay: 10000
+          fail-mode: fail
