@@ -39,7 +39,7 @@
 
 ## Related Links
 
-- **Fabric Version**: If you're looking for a similar Fabric version of this mod, check out [Siphalor's Wandering Collector](https://www.curseforge.com/minecraft/mc-mods/wandering-collector-fabric).
+- **Fabric Version**: If you're looking for a similar Fabric version of this mod, check out [Siphalor's Wandering Collector](https://www.curseforge.com/minecraft/mc-mods/wandering-collector).
 
 
 ## License
