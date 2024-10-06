@@ -75,7 +75,7 @@ public class WanderingTraderEvents {
                 MerchantOffers offers = merchantMenu.getOffers();
 
                 for (MerchantOffer offer : offers) {
-                    if (offer != null) {
+                    if (offer != null && !offer.isOutOfStock()) {
                         ItemStack resultStack = offer.getResult();
                         List<ItemStack> playerLoot = ModConstants.SERVER_LOOT
                                 .getOrDefault(player.getUUID(), new ArrayList<>());
