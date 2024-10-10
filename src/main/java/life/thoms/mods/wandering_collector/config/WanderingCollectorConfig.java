@@ -37,6 +37,7 @@ public class WanderingCollectorConfig {
     public static final ForgeConfigSpec.LongValue TRADER_SUMMONING_COOLDOWN_DURATION;
     public static final ForgeConfigSpec.ShortValue PROBABILITY_OF_LOST_ITEM_IN_TRADE;
     public static final ForgeConfigSpec.ShortValue BASE_PRICE_OF_LOST_ITEM_IN_TRADE;
+    public static final  ForgeConfigSpec.BooleanValue TRADER_SUMMONING_ENABLED;
 
     static {
         builder.push("");
@@ -73,6 +74,11 @@ public class WanderingCollectorConfig {
         builder.pop();
 
         builder.push("Wandering Trader Config");
+
+        TRADER_SUMMONING_ENABLED = builder
+                .comment("Enable being able to summon traders in villages by ringing a bell with an emerald")
+                .define("TRADER_SUMMONING_ENABLED", true );
+
         TRADER_SUMMONING_COOLDOWN_DURATION = builder
                 .comment("Minecraft ticks until you can call another trader per village (24000 = 1 in game day)" +
                         "(4 day default) (called by village bell)")

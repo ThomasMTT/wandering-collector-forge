@@ -17,6 +17,7 @@
 package life.thoms.mods.wandering_collector.events;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
+import life.thoms.mods.wandering_collector.config.WanderingCollectorConfig;
 import life.thoms.mods.wandering_collector.constants.ModConstants;
 import life.thoms.mods.wandering_collector.helpers.InventoryDataHelper;
 import life.thoms.mods.wandering_collector.helpers.TraderSummoningHelper;
@@ -64,46 +65,48 @@ public class PlayerEvents {
      */
     @SubscribeEvent
     public static void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock rightClickBlockEvent) {
-        if (!rightClickBlockEvent.getLevel().isClientSide()) {
-            if (rightClickBlockEvent.getLevel().getBlockEntity(rightClickBlockEvent.getHitVec().getBlockPos()) instanceof BellBlockEntity) {
-                Player player = rightClickBlockEvent.getEntity();
-                if (player.getItemInHand(player.getUsedItemHand()).getItem() == Items.EMERALD) {
-                    BlockPos pos = rightClickBlockEvent.getPos();
-                    Level level = rightClickBlockEvent.getLevel();
+        if (WanderingCollectorConfig.TRADER_SUMMONING_ENABLED.get()) {
+            if (!rightClickBlockEvent.getLevel().isClientSide()) {
+                if (rightClickBlockEvent.getLevel().getBlockEntity(rightClickBlockEvent.getHitVec().getBlockPos()) instanceof BellBlockEntity) {
+                    Player player = rightClickBlockEvent.getEntity();
+                    if (player.getItemInHand(player.getUsedItemHand()).getItem() == Items.EMERALD) {
+                        BlockPos pos = rightClickBlockEvent.getPos();
+                        Level level = rightClickBlockEvent.getLevel();
 
-                    BlockState bellState = level.getBlockState(pos);
-                    Direction bellDirection = bellState.getValue(BellBlock.FACING);
-                    Direction bellHitDirection = rightClickBlockEvent.getHitVec().getDirection();
-                    boolean bellWillRing = false;
-                    switch (bellState.getValue(BellBlock.ATTACHMENT)) {
-                        case FLOOR -> {
-                            if (bellDirection == bellHitDirection || bellDirection == bellHitDirection.getOpposite()) {
-                                bellWillRing = true;
+                        BlockState bellState = level.getBlockState(pos);
+                        Direction bellDirection = bellState.getValue(BellBlock.FACING);
+                        Direction bellHitDirection = rightClickBlockEvent.getHitVec().getDirection();
+                        boolean bellWillRing = false;
+                        switch (bellState.getValue(BellBlock.ATTACHMENT)) {
+                            case FLOOR -> {
+                                if (bellDirection == bellHitDirection || bellDirection == bellHitDirection.getOpposite()) {
+                                    bellWillRing = true;
+                                }
+                            }
+                            case CEILING -> {
+                                if (bellDirection != Direction.UP && bellDirection != Direction.DOWN) {
+                                    bellWillRing = true;
+                                }
+                            }
+                            default -> {
+                                if (bellDirection.getClockWise() == bellHitDirection ||
+                                        bellDirection.getCounterClockWise() == bellHitDirection) {
+                                    bellWillRing = true;
+                                }
                             }
                         }
-                        case CEILING -> {
-                            if (bellDirection != Direction.UP && bellDirection != Direction.DOWN) {
-                                bellWillRing = true;
-                            }
-                        }
-                        default -> {
-                            if (bellDirection.getClockWise() == bellHitDirection ||
-                                    bellDirection.getCounterClockWise() == bellHitDirection) {
-                                bellWillRing = true;
-                            }
-                        }
-                    }
 
-                    if (bellWillRing) {
-                        Map<Structure, LongSet> structureMap = rightClickBlockEvent.getLevel().getChunk(pos).getAllReferences();
-                        for (Structure structure : structureMap.keySet()) {
-                            if (structure instanceof JigsawStructure jigsawStructure) {
-                                if (jigsawStructure.biomes().unwrapKey().isPresent()) {
-                                    if (jigsawStructure.biomes().unwrapKey().get().location().toString().contains("village")) {
-                                        if (structureMap.get(structure).toLongArray().length > 0) {
-                                            Long villageId = structureMap.get(structure).toLongArray()[0];
-                                            TraderSummoningHelper.summonTrader(villageId, pos, level, rightClickBlockEvent.getLevel().getGameTime(), player);
-                                            break;
+                        if (bellWillRing) {
+                            Map<Structure, LongSet> structureMap = rightClickBlockEvent.getLevel().getChunk(pos).getAllReferences();
+                            for (Structure structure : structureMap.keySet()) {
+                                if (structure instanceof JigsawStructure jigsawStructure) {
+                                    if (jigsawStructure.biomes().unwrapKey().isPresent()) {
+                                        if (jigsawStructure.biomes().unwrapKey().get().location().toString().contains("village")) {
+                                            if (structureMap.get(structure).toLongArray().length > 0) {
+                                                Long villageId = structureMap.get(structure).toLongArray()[0];
+                                                TraderSummoningHelper.summonTrader(villageId, pos, level, rightClickBlockEvent.getLevel().getGameTime(), player);
+                                                break;
+                                            }
                                         }
                                     }
                                 }
