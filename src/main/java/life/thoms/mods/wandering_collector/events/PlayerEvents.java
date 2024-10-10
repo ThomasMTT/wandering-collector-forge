@@ -17,6 +17,7 @@
 package life.thoms.mods.wandering_collector.events;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
+import life.thoms.mods.wandering_collector.config.WanderingCollectorConfig;
 import life.thoms.mods.wandering_collector.constants.ModConstants;
 import life.thoms.mods.wandering_collector.helpers.InventoryDataHelper;
 import life.thoms.mods.wandering_collector.helpers.TraderSummoningHelper;
@@ -65,46 +66,48 @@ public class PlayerEvents {
      */
     @SubscribeEvent
     public static void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock rightClickBlockEvent) {
-        if (!rightClickBlockEvent.getWorld().isClientSide()) {
-            if (rightClickBlockEvent.getWorld().getBlockEntity(rightClickBlockEvent.getHitVec().getBlockPos()) instanceof BellBlockEntity) {
-                Player player = rightClickBlockEvent.getPlayer();
-                if (player.getItemInHand(player.getUsedItemHand()).getItem() == Items.EMERALD) {
-                    BlockPos pos = rightClickBlockEvent.getPos();
-                    Level level = rightClickBlockEvent.getWorld();
+        if (WanderingCollectorConfig.TRADER_SUMMONING_ENABLED.get()) {
+            if (!rightClickBlockEvent.getWorld().isClientSide()) {
+                if (rightClickBlockEvent.getWorld().getBlockEntity(rightClickBlockEvent.getHitVec().getBlockPos()) instanceof BellBlockEntity) {
+                    Player player = rightClickBlockEvent.getPlayer();
+                    if (player.getItemInHand(player.getUsedItemHand()).getItem() == Items.EMERALD) {
+                        BlockPos pos = rightClickBlockEvent.getPos();
+                        Level level = rightClickBlockEvent.getWorld();
 
-                    BlockState bellState = level.getBlockState(pos);
-                    Direction bellDirection = bellState.getValue(BellBlock.FACING);
-                    Direction bellHitDirection = rightClickBlockEvent.getHitVec().getDirection();
-                    boolean bellWillRing = false;
+                        BlockState bellState = level.getBlockState(pos);
+                        Direction bellDirection = bellState.getValue(BellBlock.FACING);
+                        Direction bellHitDirection = rightClickBlockEvent.getHitVec().getDirection();
+                        boolean bellWillRing = false;
 
-                    // Determine if the bell will ring based on its state and direction
-                    switch (bellState.getValue(BellBlock.ATTACHMENT)) {
-                        case FLOOR -> {
-                            if (bellDirection == bellHitDirection || bellDirection == bellHitDirection.getOpposite()) {
-                                bellWillRing = true;
+                        // Determine if the bell will ring based on its state and direction
+                        switch (bellState.getValue(BellBlock.ATTACHMENT)) {
+                            case FLOOR -> {
+                                if (bellDirection == bellHitDirection || bellDirection == bellHitDirection.getOpposite()) {
+                                    bellWillRing = true;
+                                }
+                            }
+                            case CEILING -> {
+                                if (bellDirection != Direction.UP && bellDirection != Direction.DOWN) {
+                                    bellWillRing = true;
+                                }
+                            }
+                            default -> {
+                                if (bellDirection.getClockWise() == bellHitDirection ||
+                                        bellDirection.getCounterClockWise() == bellHitDirection) {
+                                    bellWillRing = true;
+                                }
                             }
                         }
-                        case CEILING -> {
-                            if (bellDirection != Direction.UP && bellDirection != Direction.DOWN) {
-                                bellWillRing = true;
-                            }
-                        }
-                        default -> {
-                            if (bellDirection.getClockWise() == bellHitDirection ||
-                                    bellDirection.getCounterClockWise() == bellHitDirection) {
-                                bellWillRing = true;
-                            }
-                        }
-                    }
 
-                    if (bellWillRing) {
-                        Map<ConfiguredStructureFeature<?, ?>, LongSet> structureMap = rightClickBlockEvent.getWorld().getChunk(pos).getAllReferences();
-                        for (ConfiguredStructureFeature<?, ?> structure : structureMap.keySet()) {
-                            if (structure.feature instanceof VillageFeature villageFeature) {
-                                if (structureMap.get(structure).toLongArray().length > 0) {
-                                    Long villageId = structureMap.get(structure).toLongArray()[0];
-                                    TraderSummoningHelper.summonTrader(villageId, pos, level, rightClickBlockEvent.getWorld().getGameTime(), player);
-                                    break;
+                        if (bellWillRing) {
+                            Map<ConfiguredStructureFeature<?, ?>, LongSet> structureMap = rightClickBlockEvent.getWorld().getChunk(pos).getAllReferences();
+                            for (ConfiguredStructureFeature<?, ?> structure : structureMap.keySet()) {
+                                if (structure.feature instanceof VillageFeature villageFeature) {
+                                    if (structureMap.get(structure).toLongArray().length > 0) {
+                                        Long villageId = structureMap.get(structure).toLongArray()[0];
+                                        TraderSummoningHelper.summonTrader(villageId, pos, level, rightClickBlockEvent.getWorld().getGameTime(), player);
+                                        break;
+                                    }
                                 }
                             }
                         }
