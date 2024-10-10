@@ -44,6 +44,8 @@ public class WanderingCollectorConfig {
 
     public static final ForgeConfigSpec.IntValue BASE_PRICE_OF_LOST_ITEM_IN_TRADE;
 
+    public static final  ForgeConfigSpec.BooleanValue TRADER_SUMMONING_ENABLED;
+
     static {
         builder.push("");
         builder.comment("Weapons, armor, tools, and all enchanted items including books are added by default.")
@@ -73,6 +75,11 @@ public class WanderingCollectorConfig {
         builder.pop();
 
         builder.push("Item Expiration Config");
+
+        TRADER_SUMMONING_ENABLED = builder
+                .comment("Enable being able to summon traders in villages by ringing a bell with an emerald")
+                .define("TRADER_SUMMONING_ENABLED", true );
+
         ITEM_DISPOSAL_TIME = builder
                 .comment("Minecraft ticks until item lost forever (0 to disable) (24000 = 1 in game day) (2 week default)")
                 .defineInRange("ITEM_DISPOSAL_TIME",336000, 0, Long.MAX_VALUE);
